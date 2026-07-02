@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>📝 Daftar</h1>
+        <form onsubmit="handleSignup(event)">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password (min 6)" required>
+            <input type="password" id="confirmPassword" placeholder="Konfirmasi Password" required>
+            <div id="error" style="color:red;display:none;"></div>
+            <div id="success" style="color:green;display:none;"></div>
+            <button type="submit">Daftar</button>
+        </form>
+        <p>Sudah punya akun? <a href="/login">Login</a></p>
+    </div>
+</div>
+<script>
+async function handleSignup(e) {
+    e.preventDefault()
+    const email = document.getElementById('email').value
+    const password = document.getElementById('password').value
+    const confirmPassword = document.getElementById('confirmPassword').value
+    const errorEl = document.getElementById('error')
+    const successEl = document.getElementById('success')
+    errorEl.style.display = 'none'
+    successEl.style.display = 'none'
+
+    if (password !== confirmPassword) {
+        errorEl.textContent = 'Password tidak cocok!'
+        errorEl.style.display = 'block'
+        return
+    }
+
+    const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, confirmPassword })
+    })
+    const data = await res.json()
+    if (!data.success) {
+        errorEl.textContent = data.message
+        errorEl.style.display = 'block'
+        return
+    }
+    successEl.innerHTML = '✅ Pendaftaran berhasil! <a href="/login">Login disini</a>'
+    successEl.style.display = 'block'
+}
+</script>
+</body>
+</html>

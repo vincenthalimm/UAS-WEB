@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Keuangan</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="sidebar">
+    <h2>💰 Keuangan</h2>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/tambah">➕ Tambah</a>
+    <a href="/dataPage" class="active">📋 Data</a>
+    <a href="/admin" id="adminLink" style="display:none;">👑 Admin</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
+</div>
+<div class="main">
+    <h1>Data Keuangan</h1>
+    <div class="card">
+        <input type="text" id="search" placeholder="🔍 Cari...">
+        <select id="filter"><option value="all">Semua</option><option value="masuk">Pemasukan</option><option value="keluar">Pengeluaran</option></select>
+        <button onclick="ambilData()">Filter</button>
+    </div>
+    <div class="card">
+        <table>
+            <thead><tr><th>Keterangan</th><th>Jumlah</th><th>Tipe</th><th>Kategori</th><th>Aksi</th></tr></thead>
+            <tbody id="data"></tbody>
+        </table>
+    </div>
+    <button onclick="resetData()" style="background:#ff4d4d;color:white;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;">🗑 Reset</button>
+</div>
+<script>
+function rupiah(angka) {
+    return "Rp " + Number(angka).toLocaleString("id-ID")
+}
+
+async function ambilData() {
+    const res = await fetch("/data")
+    const data = await res.json()
+    const search = document.getElementById("search")?.value || ""
+    const filter = document.getElementById("filter")?.value || "all"
+    let isi = ""
+    data.forEach(d => {
+        if(search && !d.keterangan.toLowerCase().includes(search.toLowerCase())) return
+        if(filter !== "all" && d.tipe !== filter) return
+        isi += `<tr>
+            <td>${d.keterangan}</td>
+            <td>${rupiah(d.jumlah)}</td>
+            <td style="color:${d.tipe === 'masuk' ? '#00ffcc' : '#ff4d4d'}">${d.tipe}</td>
+            <td>${d.kategori || "-"}</td>
+            <td>
+                <a href="/edit/${d.id}" style="background:#4facfe;color:white;padding:5px 12px;border-radius:6px;text-decoration:none;">Edit</a>
+                <button onclick="hapus(${d.id})" style="background:#ff4d4d;color:white;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;">Hapus</button>
+            </td>
+        </tr>`
+    })
+    document.getElementById("data").innerHTML = isi || '<tr><td colspan="5" style="text-align:center;padding:20px;">Tidak ada data</td></tr>'
+}
+
+async function hapus(id) {
+    if(confirm("Hapus?")){
+        await fetch("/data/" + id, {method:"DELETE"})
+        ambilData()
+    }
+}
+
+async function resetData() {
+    if(confirm("Reset semua?")){
+        await fetch("/reset", {method:"DELETE"})
+        ambilData()
+        alert("Data direset")
+    }
+}
+
+async function logout() {
+    await fetch('/api/logout', { method: 'POST' })
+    window.location.href = '/login'
+}
+
+ambilData()
+</script>
+</body>
+</html>

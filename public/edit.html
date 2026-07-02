@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Data</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="sidebar">
+    <h2>💰 Keuangan</h2>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/tambah">➕ Tambah</a>
+    <a href="/dataPage">📋 Data</a>
+    <a href="/admin" id="adminLink" style="display:none;">👑 Admin</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
+</div>
+<div class="main">
+    <h1>Edit Data</h1>
+    <div class="card">
+        <input id="k" placeholder="Keterangan">
+        <input id="j" type="number" placeholder="Jumlah">
+        <input id="c" placeholder="Kategori">
+        <select id="t"><option value="masuk">Pemasukan</option><option value="keluar">Pengeluaran</option></select>
+        <button onclick="update()">Update</button>
+        <a href="/dataPage">Batal</a>
+    </div>
+</div>
+<script>
+const id = window.location.pathname.split("/")[2]
+
+async function loadEdit() {
+    const res = await fetch("/data/" + id)
+    const d = await res.json()
+    document.getElementById("k").value = d.keterangan || ""
+    document.getElementById("j").value = d.jumlah || ""
+    document.getElementById("t").value = d.tipe || "masuk"
+    document.getElementById("c").value = d.kategori || ""
+}
+
+async function update() {
+    const k = document.getElementById("k").value
+    const j = document.getElementById("j").value
+    const t = document.getElementById("t").value
+    const c = document.getElementById("c").value
+    if(!k || !j) return alert("Data tidak boleh kosong")
+    if(isNaN(j)) return alert("Jumlah harus angka")
+
+    const res = await fetch("/data/" + id, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({k, j: Number(j), t, c})
+    })
+    const data = await res.json()
+    alert(data.message)
+    if(data.success) window.location.href = "/dataPage"
+}
+
+async function logout() {
+    await fetch('/api/logout', { method: 'POST' })
+    window.location.href = '/login'
+}
+
+loadEdit()
+</script>
+</body>
+</html>

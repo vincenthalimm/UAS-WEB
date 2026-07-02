@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="sidebar">
+    <h2>💰 Keuangan</h2>
+    <a href="/dashboard">🏠 Dashboard</a>
+    <a href="/tambah">➕ Tambah</a>
+    <a href="/dataPage">📋 Data</a>
+    <a href="/admin" class="active">👑 Admin</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
+</div>
+<div class="main">
+    <h1>👑 Admin Panel</h1>
+    <div class="card">
+        <h3>📊 Daftar Pengguna</h3>
+        <table>
+            <thead><tr><th>ID</th><th>Email</th><th>Role</th><th>Aksi</th></tr></thead>
+            <tbody id="userList"></tbody>
+        </table>
+    </div>
+</div>
+<script>
+async function loadUsers() {
+    const res = await fetch('/api/users')
+    const users = await res.json()
+    let html = ''
+    users.forEach(user => {
+        html += `<tr>
+            <td>${user.id}</td>
+            <td>${user.email}</td>
+            <td>${user.role}</td>
+            <td>${user.role !== 'admin' ? `<button onclick="deleteUser(${user.id})" style="background:#ff4d4d;color:white;border:none;padding:5px 12px;border-radius:6px;cursor:pointer;">Hapus</button>` : 'Admin'}</td>
+        </tr>`
+    })
+    document.getElementById('userList').innerHTML = html
+}
+
+async function deleteUser(id) {
+    if(!confirm('Hapus user ini?')) return
+    const res = await fetch(`/api/users/${id}`, { method: 'DELETE' })
+    const data = await res.json()
+    alert(data.message)
+    if(data.success) loadUsers()
+}
+
+async function logout() {
+    await fetch('/api/logout', { method: 'POST' })
+    window.location.href = '/login'
+}
+
+loadUsers()
+</script>
+</body>
+</html>

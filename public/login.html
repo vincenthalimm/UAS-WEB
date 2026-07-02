@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card">
+        <h1>💰 Login</h1>
+        <form onsubmit="handleLogin(event)">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <div id="error" style="color:red;display:none;">Email atau password salah</div>
+            <button type="submit">Masuk</button>
+        </form>
+        <p>Belum punya akun? <a href="/signup">Daftar</a></p>
+    </div>
+</div>
+<script>
+async function handleLogin(e) {
+    e.preventDefault()
+    const email = document.getElementById('email').value
+    const password = document.getElementById('password').value
+    const errorEl = document.getElementById('error')
+    errorEl.style.display = 'none'
+
+    const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
+    const data = await res.json()
+    if (!data.success) {
+        errorEl.style.display = 'block'
+        return
+    }
+    window.location.href = data.redirect
+}
+</script>
+</body>
+</html>
