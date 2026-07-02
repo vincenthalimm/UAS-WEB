@@ -20,3 +20,4 @@ class Pengeluaran extends Transaksi {
 }
 
 export { Transaksi, Pemasukan, Pengeluaran }
+thrrhbrththjttjt
