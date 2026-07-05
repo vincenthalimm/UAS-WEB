@@ -1,0 +1,23 @@
+Nama Kelompok : Quartet Leader
+Topik Project : Money Management System
+1. Victor Valentino (241111649)
+2. Vincent Halim (241110494)
+3. Wesley (241111300)
+4. Michael (241112834)
+
+=========================================
+TEKNOLOGI YANG DIGUNAKAN
+=========================================
+Backend: Node.js + Express.js
+Database: MySQL
+Authentication: JWT (JSON Web Token) + Bcrypt
+Realtime: Socket.IO
+Frontend: HTML, CSS, JavaScript
+Deployment: Railway (https://railway.app)
+
+
+link hosting : https://uas-web-production-1944.up.railway.app/
+email admin : admin@gmail.com
+password : admin123gmail.com
+
+nb : kalau email user harus daftar melalui sign up dulu baru bisa login
