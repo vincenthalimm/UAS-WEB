@@ -1,6 +1,7 @@
-DROP DATABASE IF EXISTS keuangan;
+/*DROP DATABASE IF EXISTS keuangan;
 CREATE DATABASE keuangan;
 USE keuangan;
+*/
 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
