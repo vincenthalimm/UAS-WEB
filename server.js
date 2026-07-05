@@ -20,7 +20,7 @@ app.use(cookieParser())
 app.use(express.static("public"))
 
 // ============================================
-// 🔥 ROOT → LOGIN (WAJIB!)
+// 🔥 ROOT → LOGIN
 // ============================================
 
 app.get("/", (req, res) => {
@@ -28,24 +28,37 @@ app.get("/", (req, res) => {
 })
 
 // ============================================
-// MIDDLEWARE
+// MIDDLEWARE AUTHENTICATION (DENGAN DEBUG)
 // ============================================
 
 const isAuthenticated = async (req, res, next) => {
     try {
         const token = req.cookies?.token
-        if (!token) return res.redirect('/login')
+        console.log("🔍 TOKEN DARI COOKIE:", token ? "ADA" : "TIDAK ADA")
+        
+        if (!token) {
+            console.log("❌ Token tidak ada, redirect ke login")
+            return res.redirect('/login')
+        }
         
         const decoded = jwt.verify(token, SECRET_KEY)
+        console.log("🔍 DECODED USER:", decoded.email)
+        
         const [sessions] = await db.execute(
             "SELECT * FROM sessions WHERE user_id = ? AND token = ? AND is_active = TRUE",
             [decoded.id, token]
         )
-        if (sessions.length === 0) return res.redirect('/login')
+        console.log("🔍 SESSIONS FOUND:", sessions.length)
+        
+        if (sessions.length === 0) {
+            console.log("❌ Session tidak ditemukan di DB, redirect ke login")
+            return res.redirect('/login')
+        }
         
         req.user = decoded
         next()
     } catch (error) {
+        console.log("❌ ERROR AUTH:", error.message)
         res.redirect('/login')
     }
 }
@@ -115,6 +128,8 @@ app.post("/api/login", async (req, res) => {
     try {
         const { email, password } = req.body
 
+        console.log("📝 Login attempt:", email)
+
         if (!email || !password) {
             return res.status(400).json({ success: false, message: "Email dan password harus diisi" })
         }
@@ -125,6 +140,7 @@ app.post("/api/login", async (req, res) => {
         )
 
         if (users.length === 0) {
+            console.log("❌ User tidak ditemukan:", email)
             return res.status(401).json({ success: false, message: "Email atau password salah" })
         }
 
@@ -132,6 +148,7 @@ app.post("/api/login", async (req, res) => {
         const isValid = (password === user.password)
 
         if (!isValid) {
+            console.log("❌ Password salah untuk:", email)
             return res.status(401).json({ success: false, message: "Email atau password salah" })
         }
 
@@ -141,15 +158,25 @@ app.post("/api/login", async (req, res) => {
             { expiresIn: '7d' }
         )
 
+        console.log("✅ Token generated for:", email)
+
+        // INSERT SESSION DENGAN created_at
         await db.execute(
-            "INSERT INTO sessions (user_id, token, is_active) VALUES (?, ?, TRUE)",
+            "INSERT INTO sessions (user_id, token, is_active, created_at) VALUES (?, ?, TRUE, NOW())",
             [user.id, token]
         )
 
+        console.log("✅ Session saved to database")
+
+        // COOKIE DENGAN SAME SITE
         res.cookie('token', token, {
             httpOnly: true,
+            sameSite: "lax",
+            secure: false,  // false untuk localhost
             maxAge: 7 * 24 * 60 * 60 * 1000
         })
+
+        console.log("✅ Cookie set for:", email)
 
         res.json({
             success: true,
@@ -158,7 +185,7 @@ app.post("/api/login", async (req, res) => {
             role: user.role
         })
     } catch (error) {
-        console.error("Login error:", error)
+        console.error("❌ Login error:", error)
         res.status(500).json({ success: false, message: "Gagal login" })
     }
 })
@@ -172,6 +199,7 @@ app.post("/api/logout", async (req, res) => {
                 "UPDATE sessions SET is_active = FALSE WHERE user_id = ? AND token = ?",
                 [decoded.id, token]
             )
+            console.log("👋 Logout:", decoded.email)
         }
         res.clearCookie('token')
         res.json({ success: true, redirect: "/login" })
@@ -198,6 +226,7 @@ app.get("/api/me", isAuthenticated, async (req, res) => {
 // ============================================
 
 app.get("/dashboard", isAuthenticated, (req, res) => {
+    console.log("✅ Dashboard accessed by:", req.user.email)
     res.sendFile(path.resolve("public/index.html"))
 })
 
@@ -338,7 +367,7 @@ app.delete("/reset", isAuthenticated, isAdmin, async (req, res) => {
 })
 
 // ============================================
-// START SERVER (FIX FINAL)
+// START SERVER
 // ============================================
 
 app.listen(PORT, '0.0.0.0', () => {
