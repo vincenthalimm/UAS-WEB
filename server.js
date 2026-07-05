@@ -1,5 +1,5 @@
-import dotenv from "dotenv";
-dotenv.config();
+import dotenv from "dotenv"
+dotenv.config()
 import express from "express"
 import path from "path"
 import { fileURLToPath } from 'url'
@@ -11,7 +11,8 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
-const SECRET_KEY = "secret-key-123"
+const SECRET_KEY = process.env.JWT_SECRET || "secret-key-123"
+const PORT = process.env.PORT || 3000
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -337,12 +338,15 @@ app.delete("/reset", isAuthenticated, isAdmin, async (req, res) => {
 })
 
 // ============================================
-// START SERVER
+// START SERVER (FIX FINAL)
 // ============================================
 
-app.listen(3000, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log("========================================")
-    console.log("🚀 Server running on http://localhost:3000")
+    console.log(`🚀 Server running on port ${PORT}`)
+    console.log(`🌐 Local: http://localhost:${PORT}`)
+    console.log(`🌐 Network: http://0.0.0.0:${PORT}`)
+    console.log(`🌍 Railway URL will be assigned automatically`)
     console.log("========================================")
     console.log("📋 Login: http://localhost:3000/login")
     console.log("📝 Signup: http://localhost:3000/signup")
