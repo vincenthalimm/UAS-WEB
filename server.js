@@ -5,7 +5,7 @@ import path from "path"
 import { fileURLToPath } from 'url'
 import cookieParser from 'cookie-parser'
 import jwt from 'jsonwebtoken'
-import db from "./db.js"
+import getConnection from "./db.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -44,6 +44,7 @@ const isAuthenticated = async (req, res, next) => {
         const decoded = jwt.verify(token, SECRET_KEY)
         console.log("🔍 DECODED USER:", decoded.email)
         
+        const db = await getConnection()
         const [sessions] = await db.execute(
             "SELECT * FROM sessions WHERE user_id = ? AND token = ? AND is_active = TRUE",
             [decoded.id, token]
@@ -100,6 +101,7 @@ app.post("/api/signup", async (req, res) => {
             return res.status(400).json({ success: false, message: "Password minimal 6 karakter" })
         }
 
+        const db = await getConnection()
         const [existing] = await db.execute("SELECT * FROM users WHERE email = ?", [email])
         if (existing.length > 0) {
             return res.status(400).json({ success: false, message: "Email sudah terdaftar" })
@@ -134,6 +136,7 @@ app.post("/api/login", async (req, res) => {
             return res.status(400).json({ success: false, message: "Email dan password harus diisi" })
         }
 
+        const db = await getConnection()
         const [users] = await db.execute(
             "SELECT * FROM users WHERE email = ? AND is_active = TRUE",
             [email]
@@ -155,12 +158,11 @@ app.post("/api/login", async (req, res) => {
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role },
             SECRET_KEY,
-            { expiresIn: '7d' }
+            { expiresIn: '365d' }
         )
 
         console.log("✅ Token generated for:", email)
 
-        // INSERT SESSION DENGAN created_at
         await db.execute(
             "INSERT INTO sessions (user_id, token, is_active, created_at) VALUES (?, ?, TRUE, NOW())",
             [user.id, token]
@@ -168,12 +170,11 @@ app.post("/api/login", async (req, res) => {
 
         console.log("✅ Session saved to database")
 
-        // COOKIE DENGAN SAME SITE
         res.cookie('token', token, {
             httpOnly: true,
             sameSite: "lax",
-            secure: false,  // false untuk localhost
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            secure: false,
+            maxAge: 365 * 24 * 60 * 60 * 1000
         })
 
         console.log("✅ Cookie set for:", email)
@@ -195,6 +196,7 @@ app.post("/api/logout", async (req, res) => {
         const token = req.cookies?.token
         if (token) {
             const decoded = jwt.verify(token, SECRET_KEY)
+            const db = await getConnection()
             await db.execute(
                 "UPDATE sessions SET is_active = FALSE WHERE user_id = ? AND token = ?",
                 [decoded.id, token]
@@ -211,6 +213,7 @@ app.post("/api/logout", async (req, res) => {
 
 app.get("/api/me", isAuthenticated, async (req, res) => {
     try {
+        const db = await getConnection()
         const [users] = await db.execute(
             "SELECT id, email, role FROM users WHERE id = ?",
             [req.user.id]
@@ -252,6 +255,7 @@ app.get("/admin", isAuthenticated, isAdmin, (req, res) => {
 
 app.get("/api/users", isAuthenticated, isAdmin, async (req, res) => {
     try {
+        const db = await getConnection()
         const [users] = await db.execute(
             "SELECT id, email, role, is_active, created_at FROM users ORDER BY id DESC"
         )
@@ -269,6 +273,7 @@ app.delete("/api/users/:id", isAuthenticated, isAdmin, async (req, res) => {
             return res.status(400).json({ success: false, message: "Tidak bisa menghapus akun sendiri" })
         }
 
+        const db = await getConnection()
         await db.execute("DELETE FROM sessions WHERE user_id = ?", [userId])
         await db.execute("DELETE FROM users WHERE id = ?", [userId])
         
@@ -284,6 +289,7 @@ app.delete("/api/users/:id", isAuthenticated, isAdmin, async (req, res) => {
 
 app.get("/data", isAuthenticated, async (req, res) => {
     try {
+        const db = await getConnection()
         const [data] = await db.execute("SELECT * FROM catatan ORDER BY id DESC")
         res.json(data)
     } catch (error) {
@@ -293,6 +299,7 @@ app.get("/data", isAuthenticated, async (req, res) => {
 
 app.get("/data/:id", isAuthenticated, async (req, res) => {
     try {
+        const db = await getConnection()
         const [data] = await db.execute("SELECT * FROM catatan WHERE id = ?", [req.params.id])
         res.json(data[0] || {})
     } catch (error) {
@@ -311,6 +318,7 @@ app.post("/data", isAuthenticated, async (req, res) => {
             return res.json({ success: false, message: "Jumlah harus angka" })
         }
 
+        const db = await getConnection()
         await db.execute(
             "INSERT INTO catatan (keterangan, jumlah, tipe, kategori) VALUES (?, ?, ?, ?)",
             [k, Number(j), t, c || null]
@@ -333,6 +341,7 @@ app.put("/data/:id", isAuthenticated, async (req, res) => {
             return res.json({ success: false, message: "Jumlah harus angka" })
         }
 
+        const db = await getConnection()
         const [result] = await db.execute(
             "UPDATE catatan SET keterangan = ?, jumlah = ?, tipe = ?, kategori = ? WHERE id = ?",
             [k, Number(j), t, c || null, req.params.id]
@@ -350,6 +359,7 @@ app.put("/data/:id", isAuthenticated, async (req, res) => {
 
 app.delete("/data/:id", isAuthenticated, async (req, res) => {
     try {
+        const db = await getConnection()
         await db.execute("DELETE FROM catatan WHERE id = ?", [req.params.id])
         res.json({ success: true, message: "Hapus berhasil" })
     } catch (error) {
@@ -359,10 +369,33 @@ app.delete("/data/:id", isAuthenticated, async (req, res) => {
 
 app.delete("/reset", isAuthenticated, isAdmin, async (req, res) => {
     try {
+        const db = await getConnection()
         await db.execute("DELETE FROM catatan")
         res.json({ success: true, message: "Semua data dihapus" })
     } catch (error) {
         res.json({ success: false, message: "Gagal reset" })
+    }
+})
+
+// ============================================
+// HEALTH CHECK
+// ============================================
+
+app.get("/health", async (req, res) => {
+    try {
+        const db = await getConnection()
+        await db.execute("SELECT 1")
+        res.json({ 
+            status: "OK", 
+            database: "connected",
+            timestamp: new Date().toISOString()
+        })
+    } catch (error) {
+        res.status(500).json({ 
+            status: "ERROR", 
+            database: "disconnected",
+            error: error.message
+        })
     }
 })
 
