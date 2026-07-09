@@ -7,7 +7,6 @@ let connection = null
 
 async function getConnection() {
     try {
-        // Kalau koneksi masih hidup, pakai yang lama
         if (connection) {
             try {
                 await connection.ping()
@@ -20,11 +19,10 @@ async function getConnection() {
 
         console.log("🔄 Membuka koneksi database...")
         
-        // 🔥 PAKAI MYSQL_URL DARI RAILWAY
         const mysqlUrl = process.env.MYSQL_URL
         
         if (!mysqlUrl) {
-            throw new Error("❌ MYSQL_URL tidak ditemukan di environment variables!")
+            throw new Error("❌ MYSQL_URL tidak ditemukan!")
         }
         
         connection = await mysql.createConnection(mysqlUrl)
