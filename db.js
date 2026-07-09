@@ -7,6 +7,7 @@ let connection = null
 
 async function getConnection() {
     try {
+        // Kalau koneksi masih hidup, pakai yang lama
         if (connection) {
             try {
                 await connection.ping()
@@ -18,16 +19,15 @@ async function getConnection() {
         }
 
         console.log("🔄 Membuka koneksi database...")
-        connection = await mysql.createConnection({
-            host: process.env.DB_HOST || "sql.freedb.tech",
-            user: process.env.DB_USER || "u_SZ3MLP",
-            password: process.env.DB_PASSWORD || "",
-            database: process.env.DB_NAME || "freedb_wd1OANU2",
-            port: process.env.DB_PORT || 3306,
-            connectTimeout: 30000,
-            multipleStatements: true
-        })
-
+        
+        // 🔥 PAKAI MYSQL_URL DARI RAILWAY
+        const mysqlUrl = process.env.MYSQL_URL
+        
+        if (!mysqlUrl) {
+            throw new Error("❌ MYSQL_URL tidak ditemukan di environment variables!")
+        }
+        
+        connection = await mysql.createConnection(mysqlUrl)
         console.log("✅ Database connected!")
         return connection
     } catch (error) {
